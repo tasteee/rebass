@@ -1,4 +1,6 @@
-# rebass
+# rebass [IDEA]
+
+A community-driven platform for sharing free audio samples, loops, MIDI, stems, and synth presets. Users can upload, tag, and preview assets; build and share packs; follow creators; like and download content; and discover new sounds through search, filters, and collections—all powered by a modern, social, creator-focused design.
 
 ## 🧩 PROJECT BREAKDOWN
 
