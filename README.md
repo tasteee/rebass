@@ -1,195 +1,230 @@
-# SoundShare - Community Audio Sharing Platform
+# rebass [IDEA]
 
-A modern, community-driven platform for sharing free audio samples, loops, MIDI, stems, and synth presets. Built with Svelte 5, Tailwind CSS, and shadcn-svelte components.
+A community-driven platform for sharing free audio samples, loops, MIDI, stems, and synth presets. Users can upload, tag, and preview assets; build and share packs; follow creators; like and download content; and discover new sounds through search, filters, and collections—all powered by a modern, social, creator-focused design.
 
-![Homepage Screenshot](https://github.com/user-attachments/assets/38e1ee75-ef6c-4bb0-bc4e-4db4058da3ef)
+## 🧩 PROJECT BREAKDOWN
 
-## Features
+### 🏗️ 1. Core Setup
 
-### Core Functionality
-- **Audio Asset Management**: Upload, tag, and preview audio samples, loops, MIDI files, stems, and synth presets
-- **Pack System**: Create and share curated collections of audio assets
-- **Social Features**: Follow creators, like content, and download assets
-- **Discovery**: Search, filter by tags, and explore content through multiple views
-- **User Profiles**: View creator profiles with their assets and packs
+**Goal:** Get the environment, routing, and infrastructure stable before feature work.
+**Tasks:**
 
-### Asset Types Supported
-- 🎵 **Samples**: One-shot audio samples (kicks, snares, etc.)
-- 🔄 **Loops**: Repeating audio patterns
-- 🎹 **MIDI**: MIDI files with chord progressions and melodies
-- 🎚️ **Stems**: Individual instrument tracks
-- 🎛️ **Presets**: Synthesizer and effect presets
+* [ ] Initialize monorepo (or single repo) structure — `/apps/web` (Svelte), `/apps/server` (Hono), `/packages/ui` (optional shared UI lib)
+* [ ] Configure **Bun + Hono** server with hot reload
+* [ ] Connect **Supabase** (auth, storage, db)
+* [ ] Define `.env` structure (Supabase keys, API URLs)
+* [ ] Set up basic **Hono routes** + middleware (auth check, error handler, CORS)
+* [ ] Initialize **SvelteKit 5 app** with Tailwind + Shadcn-svelte + Iconify
+* [ ] Add global layout, typography, and component theme
 
-## Screenshots
+---
 
-### Explore Page
-![Explore Page](https://github.com/user-attachments/assets/f99966e1-7b89-4f88-a14d-bd983d1b8c89)
+### 👥 2. Authentication & User System
 
-### Upload Page
-![Upload Page](https://github.com/user-attachments/assets/e4913cc9-cf44-4880-8dea-25ba42b076ec)
+**Goal:** User identity + profile editing fully functional.
+**Tasks:**
 
-### Packs Page
-![Packs Page](https://github.com/user-attachments/assets/a6a52c97-f0a8-45a0-a99b-2e21d465cfb0)
+* [ ] Set up **Supabase Auth** (email/password, OAuth optional)
+* [ ] Implement signup, login, logout
+* [ ] Create `/profile` route
+* [ ] User profile model in Supabase:
 
-### Profile Page
-![Profile Page](https://github.com/user-attachments/assets/9b405738-21ab-43ec-802d-3a16a3694a37)
+  ```sql
+  id (uuid)
+  username
+  email
+  avatar_url
+  bio
+  urls (jsonb)
+  created_at
+  updated_at
+  ```
+* [ ] Implement “Edit Profile” form (username, bio, urls, avatar upload)
+* [ ] Avatar upload → Supabase Storage (user-avatars/)
+* [ ] Add “Delete Account” flow (soft delete or cascade delete)
+* [ ] Auth middleware on backend routes
 
-## Tech Stack
+---
 
-- **Framework**: Svelte 5 (latest) with SvelteKit
-- **Styling**: Tailwind CSS v3
-- **Icons**: @iconify/svelte
-- **UI Components**: Custom components inspired by shadcn-svelte
-- **Language**: TypeScript
-- **Build Tool**: Vite
+### 🗂️ 3. Asset System (Core Content)
 
-## Getting Started
+**Goal:** Upload + manage individual audio assets.
+**Tasks:**
 
-### Prerequisites
-- Node.js 18+ 
-- npm or pnpm
+* [ ] Supabase tables:
 
-### Installation
+  ```sql
+  assets (
+    id uuid,
+    user_id uuid (fk),
+    name text,
+    description text,
+    tags text[],
+    type enum('sample','loop','midi','stem','preset'),
+    key text,
+    scale text,
+    tempo numeric,
+    preview_url text,
+    file_url text,
+    created_at timestamp
+  )
+  ```
+* [ ] Storage buckets:
 
-```bash
-# Install dependencies
-npm install
+  * `asset-previews/` (mp3 or ogg)
+  * `assets/` (zip, wav, midi, etc)
+* [ ] File upload UI (drag/drop)
+* [ ] Metadata form (tags, tempo, key, etc)
+* [ ] Create, update, delete asset
+* [ ] Asset detail view (preview player + download button)
+* [ ] Like / Unlike asset
+* [ ] Report asset (reason, optional text)
+* [ ] Search/filter assets (by tag, type, bpm, key)
+* [ ] Pagination + infinite scroll for asset browsing
 
-# Start development server
-npm run dev
+---
 
-# Build for production
-npm run build
+### 🎛️ 4. Collections & Packs
 
-# Preview production build
-npm run preview
-```
+**Goal:** Group assets into “packs” and handle pack metadata.
+**Tasks:**
 
-## Project Structure
+* [ ] Supabase tables:
 
-```
-src/
-├── lib/
-│   ├── components/
-│   │   ├── ui/              # Reusable UI components
-│   │   │   ├── Button.svelte
-│   │   │   ├── Card.svelte
-│   │   │   └── Input.svelte
-│   │   ├── AudioAssetCard.svelte
-│   │   ├── PackCard.svelte
-│   │   └── Navigation.svelte
-│   ├── data.ts              # Mock data for development
-│   ├── stores.ts            # Svelte stores for state management
-│   ├── types.ts             # TypeScript type definitions
-│   └── utils.ts             # Utility functions
-├── routes/
-│   ├── +layout.svelte       # Root layout
-│   ├── +page.svelte         # Home page
-│   ├── explore/             # Browse and filter assets
-│   ├── packs/               # View sound packs
-│   ├── upload/              # Upload new assets
-│   └── profile/[username]/  # User profiles
-└── app.css                  # Global styles and Tailwind imports
-```
+  ```sql
+  asset_packs (
+    id uuid,
+    user_id uuid (fk),
+    name text,
+    description text,
+    tags text[],
+    artwork_url text,
+    created_at timestamp
+  )
 
-## Pages
+  asset_pack_items (
+    id uuid,
+    pack_id uuid (fk),
+    asset_id uuid (fk)
+  )
+  ```
+* [ ] Pack creation form (upload artwork, add existing assets or upload new)
+* [ ] Minimum of 5 assets validation
+* [ ] Pack view page (displays all assets inside)
+* [ ] Pack preview (plays random or selected asset)
+* [ ] Like / Unlike / Report pack
+* [ ] Download entire pack (zip server-side)
+* [ ] Delete own packs
 
-### Home (`/`)
-- Hero section with call-to-action
-- Tabbed view for Assets and Packs
-- Filter by asset type (All, Samples, Loops, MIDI, Stems, Presets)
-- Grid display of audio assets
+---
 
-### Explore (`/explore`)
-- Advanced search and filtering
-- Sort by popularity, likes, or recency
-- Filter by multiple tags
-- Sidebar navigation
+### ❤️ 5. Social Graph
 
-### Packs (`/packs`)
-- Featured pack showcase
-- Grid of all available packs
-- Pack creation button
+**Goal:** Enable user discovery and interaction.
+**Tasks:**
 
-### Upload (`/upload`)
-- Drag-and-drop file upload
-- Asset metadata form (title, description, BPM, key, tags)
-- Asset type selection
-- Upload guidelines
+* [ ] Supabase tables:
 
-### Profile (`/profile/:username`)
-- User information and stats
-- Tabbed view of user's assets and packs
-- Follow/unfollow functionality
+  ```sql
+  follows (
+    follower_id uuid,
+    following_id uuid
+  )
+  likes (
+    user_id uuid,
+    asset_id uuid nullable,
+    pack_id uuid nullable
+  )
+  reports (
+    user_id uuid,
+    asset_id uuid nullable,
+    pack_id uuid nullable,
+    reason text
+  )
+  ```
+* [ ] Follow / Unfollow logic + UI
+* [ ] User profile pages (their assets + packs + liked)
+* [ ] Like / Unlike integrated on list cards
+* [ ] Feed: show assets from followed users
 
-## Key Features Implementation
+---
 
-### State Management
-Uses Svelte 5's runes (`$state`, `$derived`) and Svelte stores for:
-- Current user authentication
-- Currently playing audio
-- Liked assets
-- Following relationships
-- Search and filter state
+### 🔍 6. Discovery, Search, Browse
 
-### Mock Data
-The application includes comprehensive mock data in `src/lib/data.ts`:
-- 3 mock users with different roles
-- 8 diverse audio assets
-- 3 curated packs
+**Goal:** Find and explore content easily.
+**Tasks:**
 
-### Responsive Design
-- Mobile-first approach
-- Responsive grid layouts
-- Touch-friendly interactions
-- Optimized for desktop, tablet, and mobile
+* [ ] Global search bar
+* [ ] Search by name, tag, user, type
+* [ ] Filter by type, genre, bpm, key, popularity, recency
+* [ ] Sort by likes, date
+* [ ] Browse “Trending”, “New”, “Top Packs”, “Top Creators”
+* [ ] Pagination + lazy loading
 
-### Type Safety
-Full TypeScript support with defined interfaces for:
-- User
-- AudioAsset
-- Pack
-- Collection
+---
 
-## Styling
+### 🎧 7. Player & Preview System
 
-The application uses a custom design system built on Tailwind CSS with:
-- CSS variables for theming
-- Dark mode support (structure in place)
-- Custom color palette focused on purple/primary accent
-- Consistent spacing and typography
-- Smooth transitions and hover effects
+**Goal:** Inline preview player across asset cards and pack pages.
+**Tasks:**
 
-## Future Enhancements
+* [ ] Lightweight audio player component (with progress bar + play/pause)
+* [ ] Global “now playing” bar
+* [ ] Auto-stop others when one is playing
+* [ ] Preload / lazy-load previews
 
-Potential features for future development:
-- Real audio playback with Web Audio API
-- Actual file upload to cloud storage
-- User authentication and authorization
-- Real-time collaboration features
-- Waveform visualization
-- Audio effects and processing
-- Comments and discussions
-- Download history tracking
-- Advanced analytics
+---
 
-## Development
+### 🧱 8. Moderation & Reporting
 
-```bash
-# Run type checking
-npm run check
+**Goal:** Handle reported content safely.
+**Tasks:**
 
-# Run in watch mode
-npm run check:watch
+* [ ] `reports` table (as above)
+* [ ] Admin dashboard (simple Hono endpoint for viewing reports)
+* [ ] Email / webhook notification to admin on report
+* [ ] Temporary disable asset until reviewed (soft flag)
 
-# Build the project
-npm run build
-```
+---
 
-## License
+### 🌐 9. Frontend Polish
 
-MIT
+**Goal:** Bring it to production quality.
+**Tasks:**
 
-## Credits
+* [ ] Global design system (colors, spacing, typography)
+* [ ] Reusable components:
 
-Built with ❤️ using Svelte 5 and Tailwind CSS
+  * `AssetCard`, `PackCard`, `UserCard`, `AudioPlayer`, `TagList`, `UserAvatar`, `FollowButton`
+* [ ] Responsive layout
+* [ ] Skeleton loaders
+* [ ] Empty states, error states, toast notifications
+
+---
+
+### 🚀 10. Deployment
+
+**Goal:** Make it public-ready.
+**Tasks:**
+
+* [ ] Deploy frontend (Vercel / Netlify)
+* [ ] Deploy backend (Bun + Hono → Fly.io or Railway)
+* [ ] Configure Supabase policies for RLS
+* [ ] Environment variables setup
+* [ ] Run production tests (uploads, downloads, auth, likes)
+* [ ] Monitor errors + analytics (Sentry, Posthog)
+
+---
+
+## 🧠 Suggested Missing Features
+
+You’ll likely want these long-term (optional for MVP):
+
+* [ ] **Comments** on assets/packs
+* [ ] **Notifications** (likes, follows, new uploads)
+* [ ] **User playlists / favorites**
+* [ ] **Batch upload / drag-and-drop multiple assets**
+* [ ] **Automatic preview generation** for uploaded WAV/AIFF (FFmpeg worker)
+* [ ] **Admin dashboard** (ban users, delete assets)
+* [ ] **Rate limiting** on upload/download/report
+* [ ] **Invite-only / beta mode** toggle
